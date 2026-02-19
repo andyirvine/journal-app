@@ -1,0 +1,26 @@
+# Environment
+.env
+
+# Database
+data/journal.db
+data/journal.db-shm
+data/journal.db-wal
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# macOS
+.DS_Store
+
+# Editor swap files
+*.swp
+*.swo
+*~
+
+# Streamlit
+.streamlit/secrets.toml
