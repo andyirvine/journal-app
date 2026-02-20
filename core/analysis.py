@@ -107,6 +107,66 @@ def get_narrative_observation(content: str) -> str:
         return f"Could not generate observation: {exc}"
 
 
+def answer_journal_question(question: str, entries: list, chat_history: list) -> str:
+    """
+    Multi-turn chat about the user's journal data.
+    entries: list of dicts with 'date' (str), 'content' (str), 'word_count' (int)
+    chat_history: list of {'role': 'user'|'assistant', 'content': str}
+    """
+    client = _get_client()
+    if not client:
+        return "Set ANTHROPIC_API_KEY in your .env file to enable journal chat."
+
+    # Build journal context: full content for last 90 days, summary for older
+    from datetime import date, timedelta
+    cutoff_full = date.today() - timedelta(days=90)
+
+    context_parts = []
+    for e in sorted(entries, key=lambda x: x["date"]):
+        entry_date = e["date"]
+        wc = e.get("word_count", 0)
+        content = e.get("content", "")
+        if isinstance(entry_date, str):
+            from datetime import date as date_type
+            entry_date_obj = date_type.fromisoformat(entry_date)
+        else:
+            entry_date_obj = entry_date
+
+        if entry_date_obj >= cutoff_full:
+            # Full content, capped at 800 chars
+            snippet = content[:800] + ("…" if len(content) > 800 else "")
+        else:
+            # Just a brief summary for older entries
+            snippet = content[:150] + ("…" if len(content) > 150 else "")
+
+        context_parts.append(f"--- {entry_date} ({wc} words) ---\n{snippet}")
+
+    journal_context = "\n\n".join(context_parts) if context_parts else "No journal entries found."
+
+    system_prompt = (
+        "You are a warm, thoughtful journaling companion. "
+        "You have access to the user's personal journal entries below. "
+        "Answer their questions about their writing, patterns, emotions, themes, and experiences "
+        "based on what's in the entries. Be specific — reference dates and details when relevant. "
+        "If you can't find enough information to answer, say so honestly. "
+        "Never invent details that aren't in the entries.\n\n"
+        f"JOURNAL ENTRIES:\n{journal_context}"
+    )
+
+    messages = chat_history + [{"role": "user", "content": question}]
+
+    try:
+        response = client.messages.create(
+            model="claude-opus-4-6",
+            max_tokens=600,
+            system=system_prompt,
+            messages=messages,
+        )
+        return response.content[0].text
+    except Exception as exc:
+        return f"Could not get a response: {exc}"
+
+
 def get_contextual_insight(current_entry: str, history_entries: list) -> str:
     client = _get_client()
     if not client:

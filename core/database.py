@@ -67,6 +67,16 @@ class User(Base):
     entries = relationship("JournalEntry", back_populates="user", cascade="all, delete-orphan")
 
 
+class ChatLog(Base):
+    __tablename__ = "chat_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    question = Column(Text, nullable=False)
+    answer = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class AIInsight(Base):
     __tablename__ = "ai_insights"
 
