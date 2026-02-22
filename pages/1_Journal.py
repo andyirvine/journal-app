@@ -148,8 +148,8 @@ with save_col:
     save_clicked = st.button("💾 Save", use_container_width=True, type="primary")
 
 if save_clicked:
-    content = st.session_state["journal_content"]
-    wc = st.session_state["current_word_count"]
+    content = st.session_state.get("journal_text_area", st.session_state["journal_content"])
+    wc = len(content.split()) if content.strip() else 0
     sentiment = compute_sentiment(content) if content.strip() else None
 
     db = next(get_db())

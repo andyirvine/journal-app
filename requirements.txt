@@ -1,4 +1,5 @@
 streamlit==1.42.0
+sqlcipher3==0.6.2
 sqlalchemy==2.0.38
 bcrypt==4.2.1
 google-auth==2.38.0

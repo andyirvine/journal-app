@@ -4,6 +4,7 @@ import os
 from datetime import date, datetime
 from typing import Generator
 
+import sqlcipher3
 from dotenv import load_dotenv
 from sqlalchemy import (
     Column,
@@ -24,17 +25,26 @@ from sqlalchemy.orm import DeclarativeBase, Session, relationship, sessionmaker
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/journal.db")
+_DB_KEY = os.getenv("DB_ENCRYPTION_KEY")
+if not _DB_KEY:
+    raise RuntimeError("DB_ENCRYPTION_KEY is not set. Add it to your .env file.")
 
 # Ensure data directory exists (relative path resolution)
 _db_path = DATABASE_URL.replace("sqlite:///", "")
 if not os.path.isabs(_db_path):
     _db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), _db_path)
-    DATABASE_URL = f"sqlite:///{_db_path}"
 os.makedirs(os.path.dirname(_db_path), exist_ok=True)
 
+
+def _make_sqlcipher_conn():
+    conn = sqlcipher3.connect(_db_path, check_same_thread=False)
+    conn.execute(f"PRAGMA key=\"{_DB_KEY}\"")
+    return conn
+
+
 engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    "sqlite://",
+    creator=_make_sqlcipher_conn,
     echo=False,
 )
 

@@ -24,3 +24,7 @@ env/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Database files and migration artefacts
+data/
+migrate_to_encrypted.py
