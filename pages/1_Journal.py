@@ -5,15 +5,16 @@ import streamlit.components.v1 as components
 from datetime import date, datetime
 from sqlalchemy.exc import IntegrityError
 
-st.set_page_config(page_title="Journal", page_icon="✍️", layout="wide")
-
 from core.auth import require_auth
 from core.database import JournalEntry, get_db
 from core.analysis import compute_sentiment
+from core.styles import inject_styles
 
 _db = next(get_db())
 require_auth(_db)
 _db.close()
+
+inject_styles()
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -47,7 +48,7 @@ if balloon_key not in st.session_state:
 # ---------------------------------------------------------------------------
 # Page header
 # ---------------------------------------------------------------------------
-st.title("✍️ Morning Pages")
+st.title("Morning Pages")
 st.markdown(f"**{TODAY.strftime('%A, %B %d, %Y')}**")
 
 # ---------------------------------------------------------------------------
@@ -70,12 +71,12 @@ components.html(f"""
   body {{ margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }}
   .row {{ display: flex; gap: 32px; align-items: baseline; margin-bottom: 10px; }}
   .metric {{ text-align: center; min-width: 90px; }}
-  .metric-value {{ font-size: 1.9rem; font-weight: 700; color: #1f2937; }}
-  .metric-label {{ font-size: 0.72rem; color: #6b7280; margin-top: 2px; text-transform: uppercase; letter-spacing: .05em; }}
-  .progress-wrap {{ height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }}
-  .progress-fill {{ height: 100%; background: #6366f1; border-radius: 4px; transition: width 0.1s ease; }}
-  .progress-fill.done {{ background: #22c55e; }}
-  .celebration {{ margin-top: 8px; font-size: 0.9rem; color: #16a34a; display: none; }}
+  .metric-value {{ font-size: 1.9rem; font-weight: 700; color: #2c2825; }}
+  .metric-label {{ font-size: 0.72rem; color: #7a7068; margin-top: 2px; text-transform: uppercase; letter-spacing: .05em; }}
+  .progress-wrap {{ height: 8px; background: #dedad3; border-radius: 4px; overflow: hidden; }}
+  .progress-fill {{ height: 100%; background: #6e8b76; border-radius: 4px; transition: width 0.1s ease; }}
+  .progress-fill.done {{ background: #4a7c59; }}
+  .celebration {{ margin-top: 8px; font-size: 0.9rem; color: #4a7c59; display: none; }}
 </style>
 <div class="row">
   <div class="metric">
@@ -145,7 +146,7 @@ st.text_area(
 # ---------------------------------------------------------------------------
 save_col, info_col = st.columns([1, 3])
 with save_col:
-    save_clicked = st.button("💾 Save", use_container_width=True, type="primary")
+    save_clicked = st.button("Save", use_container_width=True, type="primary")
 
 if save_clicked:
     content = st.session_state.get("journal_text_area", st.session_state["journal_content"])

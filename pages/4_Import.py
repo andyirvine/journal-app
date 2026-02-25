@@ -3,18 +3,18 @@ from __future__ import annotations
 import streamlit as st
 from datetime import datetime
 
-st.set_page_config(page_title="Import", page_icon="📥", layout="wide")
-
 from core.auth import require_auth
 from core.database import JournalEntry, get_db
 from core.analysis import compute_sentiment
 from core.importer import parse_upload
+from core.styles import inject_styles
 
 _db = next(get_db())
 require_auth(_db)
 _db.close()
 
-st.title("📥 Import Entries")
+inject_styles()
+st.title("Import Entries")
 st.markdown(
     "Import journal entries from plain text (`.txt`), Markdown (`.md`), "
     "or a 750words.com export (`.zip` or single combined file)."
@@ -63,7 +63,7 @@ conflict = st.radio(
 # ---------------------------------------------------------------------------
 # Import button
 # ---------------------------------------------------------------------------
-if st.button("⬆️ Import Entries", type="primary"):
+if st.button("Import Entries", type="primary"):
     db = next(get_db())
     user_id = st.session_state["user_id"]
 

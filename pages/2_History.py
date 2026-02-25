@@ -3,16 +3,16 @@ from __future__ import annotations
 import streamlit as st
 from datetime import date
 
-st.set_page_config(page_title="History", page_icon="📅", layout="wide")
-
 from core.auth import require_auth
 from core.database import JournalEntry, get_db
+from core.styles import inject_styles
 
 _db = next(get_db())
 require_auth(_db)
 _db.close()
 
-st.title("📅 Journal History")
+inject_styles()
+st.title("Journal History")
 
 # ---------------------------------------------------------------------------
 # Fetch all entries for this user
@@ -61,7 +61,26 @@ for e in entries:
     entry_map[date_str] = e
 
 # ---------------------------------------------------------------------------
-# Calendar
+# Modal dialog
+# ---------------------------------------------------------------------------
+@st.dialog("Journal Entry", width="large")
+def show_entry_modal(entry, date_str):
+    st.caption(f"{date_str} · {entry.word_count or 0} words")
+    if entry.sentiment_score is not None:
+        score = entry.sentiment_score
+        label = "Positive" if score >= 0.05 else ("Negative" if score <= -0.05 else "Neutral")
+        st.caption(f"Sentiment: {label} ({score:+.2f})")
+    st.text_area(
+        "",
+        value=entry.content,
+        height=500,
+        disabled=True,
+        key=f"modal_entry_{date_str}",
+        label_visibility="collapsed",
+    )
+
+# ---------------------------------------------------------------------------
+# Calendar (full width)
 # ---------------------------------------------------------------------------
 try:
     from streamlit_calendar import calendar as st_calendar
@@ -75,42 +94,26 @@ try:
         "initialView": "dayGridMonth",
         "selectable": True,
         "editable": False,
-        "height": 600,
+        "height": 650,
     }
 
-    col_cal, col_entry = st.columns([2, 1])
+    result = st_calendar(events=events, options=calendar_options, key="history_calendar")
 
-    with col_cal:
-        result = st_calendar(events=events, options=calendar_options, key="history_calendar")
-
-    # Capture event click — store in session state immediately
+    # Capture event click
     if result and result.get("eventClick"):
         clicked_date = result["eventClick"]["event"].get("extendedProps", {}).get("date")
         if clicked_date:
             st.session_state["selected_history_date"] = clicked_date
+            st.session_state["open_entry_modal"] = True
 
-    with col_entry:
+    # Open modal if triggered (reset flag first so it doesn't reopen after close)
+    if st.session_state.get("open_entry_modal"):
+        st.session_state["open_entry_modal"] = False
         selected_date = st.session_state.get("selected_history_date")
         if selected_date and selected_date in entry_map:
-            entry = entry_map[selected_date]
-            st.subheader(f"Entry: {selected_date}")
-            st.caption(f"{entry.word_count or 0} words")
-            if entry.sentiment_score is not None:
-                score = entry.sentiment_score
-                label = "Positive" if score >= 0.05 else ("Negative" if score <= -0.05 else "Neutral")
-                st.caption(f"Sentiment: {label} ({score:+.2f})")
-            st.text_area(
-                "Content",
-                value=entry.content,
-                height=500,
-                disabled=True,
-                key=f"view_entry_{selected_date}",
-            )
-        else:
-            st.info("Click a day on the calendar to read that entry.")
+            show_entry_modal(entry_map[selected_date], selected_date)
 
 except ImportError:
-    # Fallback: simple list view if streamlit-calendar not installed
     st.warning("Install `streamlit-calendar` for the calendar view. Showing list instead.")
     st.divider()
     for e in reversed(entries):

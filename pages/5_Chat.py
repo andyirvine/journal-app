@@ -5,17 +5,17 @@ from datetime import datetime
 
 import streamlit as st
 
-st.set_page_config(page_title="Chat", page_icon="💬", layout="wide")
-
 from core.auth import require_auth
 from core.database import ChatLog, JournalEntry, get_db
 from core.analysis import answer_journal_question
+from core.styles import inject_styles
 
 _db = next(get_db())
 require_auth(_db)
 _db.close()
 
-st.title("💬 Ask Your Journal")
+inject_styles()
+st.title("Ask Your Journal")
 st.caption("Ask anything about your writing — themes, patterns, emotions, specific memories.")
 
 # ---------------------------------------------------------------------------

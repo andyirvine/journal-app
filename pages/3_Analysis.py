@@ -6,17 +6,17 @@ from datetime import date, datetime, timedelta
 import plotly.graph_objects as go
 import streamlit as st
 
-st.set_page_config(page_title="Analysis", page_icon="📊", layout="wide")
-
 from core.auth import require_auth
 from core.database import AIInsight, JournalEntry, get_db
 from core.analysis import extract_keywords, get_narrative_observation, get_contextual_insight
+from core.styles import inject_styles
 
 _db = next(get_db())
 require_auth(_db)
 _db.close()
 
-st.title("📊 Analysis & Insights")
+inject_styles()
+st.title("Analysis & Insights")
 
 # ---------------------------------------------------------------------------
 # Fetch all entries
@@ -108,9 +108,9 @@ if dates_with_scores:
         x=chart_dates, y=rolling_avg,
         mode="lines",
         name="7-day avg",
-        line=dict(color="#2196f3", width=2),
+        line=dict(color="#6e8b76", width=2),
         fill="tozeroy",
-        fillcolor="rgba(33,150,243,0.1)",
+        fillcolor="rgba(110,139,118,0.1)",
     ))
     fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
     fig.update_layout(
@@ -142,7 +142,7 @@ if keywords:
         x=kw_counts[::-1],
         y=kw_words[::-1],
         orientation="h",
-        marker_color="#5c6bc0",
+        marker_color="#8ea89a",
     ))
     fig2.update_layout(
         height=450,
@@ -176,7 +176,7 @@ else:
     btn_col1, btn_col2 = st.columns(2)
 
     with btn_col1:
-        if st.button("✨ Narrative Observation", use_container_width=True):
+        if st.button("Narrative Observation", use_container_width=True):
             with st.spinner("Generating observation..."):
                 obs = get_narrative_observation(today_entry.content)
             st.session_state["narrative_observation"] = obs
@@ -192,7 +192,7 @@ else:
             db.close()
 
     with btn_col2:
-        if st.button("🔗 Contextual Insight", use_container_width=True):
+        if st.button("Contextual Insight", use_container_width=True):
             history = [
                 {"date": e.date.isoformat(), "content": e.content}
                 for e in entries
@@ -241,7 +241,7 @@ if not past_insights:
     st.caption("No saved insights yet — generate one above.")
 else:
     for insight in past_insights:
-        label = "✨ Narrative Observation" if insight.insight_type == "narrative" else "🔗 Contextual Insight"
+        label = "Narrative Observation" if insight.insight_type == "narrative" else "Contextual Insight"
         local_time = datetime.fromtimestamp(insight.created_at.timestamp())
         header = f"{label} — {insight.entry_date.strftime('%B %d, %Y')} · {local_time.strftime('%I:%M %p')}"
         with st.expander(header):
