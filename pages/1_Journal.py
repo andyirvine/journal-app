@@ -23,9 +23,9 @@ TODAY = date.today()
 TARGET_WORDS = 750
 
 # ---------------------------------------------------------------------------
-# Load today's entry from DB once (first load only)
+# Load today's entry from DB — reload if the cached content is from a previous day
 # ---------------------------------------------------------------------------
-if "journal_content" not in st.session_state:
+if st.session_state.get("journal_date") != TODAY:
     db = next(get_db())
     existing = (
         db.query(JournalEntry)
@@ -35,15 +35,17 @@ if "journal_content" not in st.session_state:
         )
         .first()
     )
+    st.session_state["journal_date"] = TODAY
     st.session_state["journal_content"] = existing.content if existing else ""
     st.session_state["current_word_count"] = len(st.session_state["journal_content"].split())
     st.session_state["last_saved_time"] = existing.updated_at if existing else None
     db.close()
 
-# Initialize balloon gate
+# Initialize balloon gate — pre-set to True if the entry already has 750+ words
+# so revisiting or refreshing the page doesn't re-trigger the animation
 balloon_key = f"balloon_shown_{TODAY}"
 if balloon_key not in st.session_state:
-    st.session_state[balloon_key] = False
+    st.session_state[balloon_key] = st.session_state.get("current_word_count", 0) >= TARGET_WORDS
 
 # ---------------------------------------------------------------------------
 # Page header
