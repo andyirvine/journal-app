@@ -158,7 +158,7 @@ def answer_journal_question(question: str, entries: list, chat_history: list) ->
     try:
         response = client.messages.create(
             model="claude-opus-4-6",
-            max_tokens=600,
+            max_tokens=2048,
             system=system_prompt,
             messages=messages,
         )
