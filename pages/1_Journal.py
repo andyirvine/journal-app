@@ -39,6 +39,8 @@ if st.session_state.get("journal_date") != TODAY:
     st.session_state["journal_content"] = existing.content if existing else ""
     st.session_state["current_word_count"] = len(st.session_state["journal_content"].split())
     st.session_state["last_saved_time"] = existing.updated_at if existing else None
+    # Sync autosave tracker so page load doesn't trigger an immediate save
+    st.session_state["autosave_last_content"] = st.session_state["journal_content"]
     db.close()
 
 # Initialize balloon gate — pre-set to True if the entry already has 750+ words
@@ -144,17 +146,11 @@ st.text_area(
 )
 
 # ---------------------------------------------------------------------------
-# Save button
+# Shared save helper
 # ---------------------------------------------------------------------------
-save_col, info_col = st.columns([1, 3])
-with save_col:
-    save_clicked = st.button("Save", use_container_width=True, type="primary")
-
-if save_clicked:
-    content = st.session_state.get("journal_text_area", st.session_state["journal_content"])
+def _do_save(content: str) -> None:
     wc = len(content.split()) if content.strip() else 0
     sentiment = compute_sentiment(content) if content.strip() else None
-
     db = next(get_db())
     try:
         entry = (
@@ -184,19 +180,56 @@ if save_clicked:
             db.add(entry)
         db.commit()
         st.session_state["last_saved_time"] = now
-        st.rerun()
-    except Exception as exc:
+    except Exception:
         db.rollback()
-        st.error(f"Save failed: {exc}")
+        raise
     finally:
         db.close()
 
-with info_col:
+# ---------------------------------------------------------------------------
+# Save button + autosave status
+# ---------------------------------------------------------------------------
+save_col, status_col = st.columns([1, 3])
+
+with save_col:
+    save_clicked = st.button("Save", use_container_width=True, type="primary")
+
+if save_clicked:
+    content = st.session_state.get("journal_text_area", st.session_state["journal_content"])
+    try:
+        _do_save(content)
+        st.session_state["autosave_last_content"] = content
+        st.rerun()
+    except Exception as exc:
+        st.error(f"Save failed: {exc}")
+
+@st.fragment(run_every=20)
+def autosave_status():
+    # journal_text_area reflects the actual current textarea value each fragment run,
+    # even if the user hasn't blurred the field yet
+    content = st.session_state.get("journal_text_area") or st.session_state.get("journal_content", "")
+
+    if content and content != st.session_state.get("autosave_last_content"):
+        try:
+            _do_save(content)
+            st.session_state["autosave_last_content"] = content
+            st.session_state["journal_content"] = content
+        except Exception:
+            pass  # silent — manual save is still available
+
+    # Balloon check inside the fragment so it fires even without a full page rerun
+    wc = len(content.split()) if content.strip() else 0
+    if wc >= TARGET_WORDS and not st.session_state.get(balloon_key):
+        st.balloons()
+        st.session_state[balloon_key] = True
+
     last_saved = st.session_state.get("last_saved_time")
     if last_saved:
-        # Convert UTC to local display time (best effort)
         try:
             local_time = datetime.fromtimestamp(last_saved.timestamp())
             st.caption(f"Last saved: {local_time.strftime('%I:%M %p')}")
         except Exception:
             st.caption(f"Last saved: {last_saved.strftime('%H:%M UTC')}")
+
+with status_col:
+    autosave_status()
