@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import io
+import zipfile
 import streamlit as st
 from datetime import datetime
 
@@ -14,7 +16,41 @@ require_auth(_db)
 _db.close()
 
 inject_styles()
-st.title("Import Entries")
+st.title("Import / Export")
+
+# ---------------------------------------------------------------------------
+# Export
+# ---------------------------------------------------------------------------
+st.subheader("Export")
+st.markdown("Download all your entries as a `.zip` file. You can re-import this on any device.")
+
+if st.button("Export all entries", type="primary"):
+    db = next(get_db())
+    user_id = st.session_state["user_id"]
+    entries = db.query(JournalEntry).filter(JournalEntry.user_id == user_id).all()
+    db.close()
+
+    if not entries:
+        st.warning("No entries to export.")
+    else:
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for entry in entries:
+                zf.writestr(f"{entry.date.isoformat()}.txt", entry.content)
+        buf.seek(0)
+        st.download_button(
+            label=f"Download {len(entries)} entries",
+            data=buf,
+            file_name="journal_export.zip",
+            mime="application/zip",
+        )
+
+st.divider()
+
+# ---------------------------------------------------------------------------
+# Import
+# ---------------------------------------------------------------------------
+st.subheader("Import")
 st.markdown(
     "Import journal entries from plain text (`.txt`), Markdown (`.md`), "
     "or a 750words.com export (`.zip` or single combined file)."
