@@ -1,10 +1,17 @@
 import base64
 import os
+from PIL import Image, ImageDraw
 
 os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", "1")
 
 import streamlit as st
 from dotenv import load_dotenv
+
+# Streamlit Cloud exposes secrets via st.secrets; inject them into os.environ
+# so all code using os.getenv() works on both local and cloud.
+for _key, _val in st.secrets.items():
+    if isinstance(_val, str):
+        os.environ.setdefault(_key, _val)
 
 load_dotenv()
 
@@ -20,9 +27,28 @@ from core.auth import (
     set_session_user,
 )
 
+def _make_favicon() -> Image.Image:
+    """Draw a 64×64 open-journal icon using the app's colour palette."""
+    sz = 64
+    img = Image.new("RGBA", (sz, sz), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    # Navy rounded background
+    d.rounded_rectangle([0, 0, sz - 1, sz - 1], radius=13, fill=(26, 26, 46))
+    # Left page (light lavender)
+    d.polygon([(7, 15), (30, 12), (30, 51), (7, 54)], fill=(245, 242, 255))
+    # Right page (slightly darker lavender)
+    d.polygon([(34, 12), (57, 15), (57, 54), (34, 51)], fill=(237, 232, 247))
+    # Ruled lines on right page (purple tint)
+    for y in (23, 31, 39):
+        d.line([(37, y), (52, y)], fill=(157, 143, 204), width=2)
+    # Pen tip dot (gold)
+    d.ellipse([(23, 38), (27, 42)], fill=(246, 201, 14))
+    return img
+
+
 st.set_page_config(
     page_title="Morning Journal",
-    page_icon="📓",
+    page_icon=_make_favicon(),
     layout="wide",
 )
 
