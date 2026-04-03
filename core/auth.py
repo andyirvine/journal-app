@@ -164,7 +164,7 @@ _GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/userinfo.profile",
 ]
 
-_REDIRECT_URI = "http://localhost:8501"
+_REDIRECT_URI = os.getenv("REDIRECT_URI", "http://localhost:8501")
 
 
 def _build_flow() -> Optional[Flow]:
