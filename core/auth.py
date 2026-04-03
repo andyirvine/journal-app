@@ -164,7 +164,8 @@ _GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/userinfo.profile",
 ]
 
-_REDIRECT_URI = os.getenv("REDIRECT_URI", "http://localhost:8501")
+def _get_redirect_uri() -> str:
+    return os.getenv("REDIRECT_URI", "http://localhost:8501")
 
 
 def _build_flow() -> Optional[Flow]:
@@ -172,16 +173,17 @@ def _build_flow() -> Optional[Flow]:
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
     if not client_id or not client_secret:
         return None
+    redirect_uri = _get_redirect_uri()
     client_config = {
         "web": {
             "client_id": client_id,
             "client_secret": client_secret,
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [_REDIRECT_URI],
+            "redirect_uris": [redirect_uri],
         }
     }
-    return Flow.from_client_config(client_config, scopes=_GOOGLE_SCOPES, redirect_uri=_REDIRECT_URI)
+    return Flow.from_client_config(client_config, scopes=_GOOGLE_SCOPES, redirect_uri=redirect_uri)
 
 
 def get_google_auth_url() -> Optional[str]:
