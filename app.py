@@ -9,12 +9,14 @@ from dotenv import load_dotenv
 
 # Streamlit Cloud exposes secrets via st.secrets; inject them into os.environ
 # so all code using os.getenv() works on both local and cloud.
-try:
+_secrets_paths = [
+    os.path.expanduser("~/.streamlit/secrets.toml"),
+    os.path.join(os.path.dirname(__file__), ".streamlit", "secrets.toml"),
+]
+if any(os.path.exists(p) for p in _secrets_paths):
     for _key, _val in st.secrets.items():
         if isinstance(_val, str):
             os.environ.setdefault(_key, _val)
-except FileNotFoundError:
-    pass
 
 load_dotenv()
 
