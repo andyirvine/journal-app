@@ -13,7 +13,8 @@ _secrets_paths = [
     os.path.expanduser("~/.streamlit/secrets.toml"),
     os.path.join(os.path.dirname(__file__), ".streamlit", "secrets.toml"),
 ]
-if any(os.path.exists(p) for p in _secrets_paths):
+_on_streamlit_cloud = os.path.exists("/mount/src")
+if _on_streamlit_cloud or any(os.path.exists(p) for p in _secrets_paths):
     for _key, _val in st.secrets.items():
         if isinstance(_val, str):
             os.environ.setdefault(_key, _val)
